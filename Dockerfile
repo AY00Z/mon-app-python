@@ -1,8 +1,10 @@
 
 pipeline {
-    agent any
-    tools {
-        docker 'my-docker'  // Utilise la config Docker de Jenkins
+    agent {
+        docker {
+            image 'python:3.9-slim'
+            args '-v /var/run/docker.sock:/var/run/docker.sock'
+        }
     }
     stages {
         stage('Checkout') {
@@ -10,12 +12,27 @@ pipeline {
                 checkout scm
             }
         }
+        stage('Install Dependencies') {
+            steps {
+                sh 'pip install flask'
+            }
+        }
+        stage('Test Application') {
+            steps {
+                sh '''
+                    python app.py &
+                    sleep 5
+                    curl -f http://localhost:5000/health
+                    pkill -f "python app.py"
+                '''
+            }
+        }
         stage('Build Docker Image') {
             steps {
                 sh 'docker build -t mon-app-python:latest .'
             }
         }
-        stage('Test') {
+        stage('Test Docker Image') {
             steps {
                 sh '''
                     docker run -d --name test-app -p 5002:5000 mon-app-python:latest
@@ -24,12 +41,6 @@ pipeline {
                     docker stop test-app
                     docker rm test-app
                 '''
-            }
-        }
-        stage('Deploy') {
-            steps {
-                sh 'docker-compose down || true'
-                sh 'docker-compose up -d'
             }
         }
     }
