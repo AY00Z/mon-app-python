@@ -11,3 +11,11 @@ def health():
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
+
+@app.route('/api/version')
+def version():
+    return {'version': '1.0.0', 'author': 'AY00Z'}
+
+@app.route('/docker')
+def docker_info():
+    return '<h2>🚀 Déployé avec Docker!</h2><p>CI/CD avec Jenkins</p>'
